@@ -19,14 +19,27 @@
 <html>
 <head>
     <style>
+        body {
+            margin: 0;
+            width: 50%;
+            height: 50%;
+        }
+
         :root {
             --radius: 600px;
-            --items: 20;--current-item:  0;--angle: 0deg;--distance: -500px; }
+            --items: 20;
+            --current-item:  0;
+            --angle: 0deg;
+            --distance: -500px;
+        }
 
         .container {
             position:  relative;
             perspective: 1000px;
+            perspective-origin: top;
             width: 100%;
+            height: 100%;
+            overflow: hidden;
 
             input[type=radio] {
                 display: none;
@@ -54,14 +67,13 @@
             #item-20:checked ~ .carousel { --current-item: 19; --angle: calc(-360deg / var(--items) * 19); transform: translateZ(var(--distance)) rotateY(var(--angle)); }
 
             .carousel {
-                position: absolute;
+                position: relative;
                 width: 0;
                 height: 0;
                 margin: auto;
                 transform-style: preserve-3d;
                 background-color: red;
                 transition: transform 1s;
-                left: 50%;
 
                 label {
                     cursor: pointer;
@@ -69,7 +81,6 @@
 
                 .item {
                     position: absolute;
-                    top: 190px;
                     left: -127px;
                     transform: rotateY(calc(360deg / var(--items) * var(--index))) translateZ(var(--radius)) rotateY(calc(-360deg / var(--items) * var(--index) - var(--angle))) scale(calc(var(--big) / 3));
                     --big: 1 - min(max(var(--current-item) - var(--index), -1 * (var(--current-item) - var(--index))), 1);
