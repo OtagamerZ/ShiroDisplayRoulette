@@ -21,7 +21,6 @@
     <style>
         :root {
             --radius: 600px;
-            --items: 20;
             --current-item:  0;
             --angle: 0deg;
             --distance: -500px;
@@ -48,6 +47,7 @@
                 transform-style: preserve-3d;
                 background-color: red;
                 transition: transform 1s;
+                transform: translateZ(var(--distance)) rotateY(0deg);
 
                 label {
                     cursor: pointer;
@@ -58,7 +58,7 @@
                     left: -127px;
                     transform: rotateY(calc(360deg / var(--items) * var(--index))) translateZ(var(--radius)) rotateY(calc(-360deg / var(--items) * var(--index) - var(--angle))) scale(calc(var(--big) / 3));
                     --big: 1 - min(max(var(--current-item) - var(--index), -1 * (var(--current-item) - var(--index))), 1);
-                    transition: transform 1s;
+                    transition: transform 1s, opacity 1s;
 
                     img {
                         transition: scale 1s;
@@ -68,23 +68,21 @@
                         width: 255px;
                         height: 380px;
                     }
-
-                    .infobox {
-                        position: absolute;
-                        opacity: calc(var(--big));
-                        transition: opacity 1s;
-                        left: 255px;
-                        background-color: rgb(220 199 215);
-                        border-radius: 10px;
-                        border-color: rgb(187 112 161);
-                        border-width: 3px;
-                        border-style: solid;
-                        box-shadow: 0 0 20px 0 black;
-                        width: 30vw;
-                        height: 50vh;
-                        pointer-events: none;
-                    }
                 }
+            }
+
+            #infobox {
+                position: absolute;
+                transition: opacity 1s;
+                left: calc(50% + 150px);
+                width: 30vw;
+                background-color: rgb(220 199 215);
+                border-radius: 10px;
+                border-color: rgb(187 112 161);
+                border-width: 3px;
+                border-style: solid;
+                box-shadow: 0 0 20px 0 black;
+                pointer-events: none;
             }
         }
     </style>
@@ -96,11 +94,16 @@
             "SHINIGAMI_REALM", "TRANSMUTATION", "SORA",
             "BLACK_GOLD_SAW", "3DMG", "FAR_CRY",
             "CASULL", "JIBRIL", "LUCYNA_KUSHINADA",
-            "REG", "JEANNE_DARC",
+            "REG", "JEANNE_DARC"
         ];
+        const cacheDesc = {};
+
+        let autoplay;
 
         function loadCards() {
             const carousel = document.getElementById("carousel");
+            const root = document.querySelector(':root').style;
+            root.setProperty("--items", cards.length.toString());
 
             for (let i = 0; i < cards.length; i++){
                 const id = cards[i];
@@ -110,13 +113,7 @@
                 label.for = `item-${i}`;
                 label.classList.add("item");
                 label.style.setProperty("--index", i.toString());
-                label.onclick = () => {
-                    const root = document.querySelector(':root').style;
-                    const current = root.getPropertyValue("--current-item");
-
-                    root.setProperty("--current-item", i.toString());
-                    rotate(current - i);
-                }
+                label.onclick = () => rotateTo(i);
 
                 const img = document.createElement("img");
                 img.src = `https://api.shirojbot.site/v2/shoukan/PT/${id}`;
@@ -124,24 +121,91 @@
                 label.appendChild(img);
                 carousel.appendChild(label);
             }
+
+            cardFade();
+            startAutoplay();
+            rotateTo(0);
+
+            const infobox = document.getElementById("infobox");
+            infobox.src = `https://api.shirojbot.site/v2/shoukan/PT/${cards[0]}/infobox`;
+            infobox.style.visibility = "hidden";
+            infobox.style.opacity = "0";
+
+            window.addEventListener("message", fitInfobox);
         }
 
         let angle = 0;
-        function rotate(places) {
+        function rotateTo(to) {
+            to %= cards.length;
+
             const root = document.querySelector(':root').style;
             const carousel = document.getElementById("carousel");
+            const from = parseInt(root.getPropertyValue("--current-item") || 0);
+
             const step = 360 / cards.length;
-            angle += places * step;
+            const distance = (from - to + cards.length / 2) % cards.length - cards.length / 2;
+
+            if (distance < -cards.length / 2) angle += (distance + cards.length) * step;
+            else angle += distance * step;
 
             root.setProperty("--angle", `${angle}deg`);
+            root.setProperty("--current-item", to.toString());
             carousel.style.transform = `translateZ(var(--distance)) rotateY(${angle}deg)`;
+            cardFade();
+
+            if (to !== from) {
+                const infobox = document.getElementById("infobox");
+                infobox.src = `https://api.shirojbot.site/v2/shoukan/PT/${cards[to]}/infobox`;
+                infobox.style.visibility = "hidden";
+                infobox.style.opacity = "0";
+            }
+        }
+
+        function cardFade() {
+            const root = document.querySelector(':root').style;
+            const items = document.getElementsByClassName("item");
+            const current = root.getPropertyValue("--current-item");
+
+            for (const item of items) {
+                const i = item.style.getPropertyValue("--index");
+
+                let distance = (i - current + cards.length / 2) % cards.length - cards.length / 2;
+                if (distance < -cards.length / 2) distance += cards.length;
+
+                distance = Math.abs(distance);
+                item.style.opacity = Math.max(0, 1 - distance / 3).toString();
+                if (distance >= 3) {
+                    item.style.pointerEvents = "none";
+                } else {
+                    item.style.pointerEvents = "unset";
+                }
+            }
+        }
+
+        function stopAutoplay() {
+            clearInterval(autoplay);
+        }
+
+        function startAutoplay() {
+            // autoplay = setInterval(() => {
+            //     const root = document.querySelector(':root').style;
+            //     const current = parseInt(root.getPropertyValue("--current-item") || 0);
+            //     rotateTo(current + 1);
+            // }, 5000);
+        }
+
+        function fitInfobox(evt) {
+            const infobox = document.getElementById("infobox");
+            infobox.style.height = evt.data + "px";
+            infobox.style.visibility = "visible";
+            infobox.style.opacity = "100%";
         }
     </script>
 </head>
 <body onload="loadCards()">
 <div id="container">
-    <div id="carousel"></div>
-    <embed id="infobox">
+    <div id="carousel" onmouseenter="stopAutoplay()" onmouseleave="startAutoplay()"></div>
+    <iframe id="infobox"></iframe>
 </div>
 </body>
 </html>
