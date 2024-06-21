@@ -132,6 +132,7 @@
             infobox.src = `https://api.shirojbot.site/v2/shoukan/PT/${cards[0]}/infobox`;
             infobox.style.visibility = "hidden";
             infobox.style.opacity = "0";
+            infobox.style.height = "0";
 
             window.addEventListener("message", fitInfobox);
         }
@@ -160,6 +161,7 @@
                 infobox.src = `https://api.shirojbot.site/v2/shoukan/PT/${cards[to]}/infobox`;
                 infobox.style.visibility = "hidden";
                 infobox.style.opacity = "0";
+                infobox.style.height = "0";
             }
         }
 
