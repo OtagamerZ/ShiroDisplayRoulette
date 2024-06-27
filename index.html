@@ -147,6 +147,8 @@
 
         let angle = 0;
         function rotateTo(to) {
+            if (document.hidden) return;
+
             to %= cards.length;
 
             const root = document.querySelector(':root').style;
